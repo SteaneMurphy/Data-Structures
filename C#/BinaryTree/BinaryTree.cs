@@ -1,22 +1,21 @@
 ﻿using System;
-using static DataStructures.BinaryTree;
-using System.Xml.Linq;
+using System.ComponentModel;
 
 namespace DataStructures
 {
-    internal class BinaryTree
+    public class BinaryTree
     {
-        #region Class Variables
+        //class variables
         private Node root { get; set; }
-        private int treeSize = 0;
-        #endregion
+        private int nodeAmount = 0;
 
-        #region Class Constructors
+        //initialisation
         public BinaryTree()
         {
             root = null;
         }
 
+        //define the tree traversal types
         public enum TraversalType
         {
             PreOrder,
@@ -24,21 +23,30 @@ namespace DataStructures
             PostOrder
         }
 
+        //define the tree function:
+        //display logs each Node (according to traversal type)
+        //search traverses the tree until the desired number is found (according to traversal type)
         public enum Method 
         {
             Display,
             Search
         }
-        #endregion
 
-        #region Class Functions
+        //class functions
+
+        //adds a new Node to the Tree
+        //if root is null, create and set root to new node
+        //if number is less than current node's number and the node has children
+        //or if the number is greater than/equal to the current node's number and the node has children
+        //then call the AddNode function again, passing in the current node as root
+        //when there are no more child nodes, insert the new node and set its number
         public void AddNode(int _data, Node currentNode = null) 
         {
             if (root == null) 
             {
                 Node newNode = new Node(_data);
                 root = newNode;
-                treeSize++;
+                nodeAmount++;
                 return;
             }
 
@@ -58,7 +66,7 @@ namespace DataStructures
                     Node newNode = new Node(_data);
                     newNode.SetParent(currentNode);
                     currentNode.SetLeft(newNode);
-                    treeSize++;
+                    nodeAmount++;
                 }
             }
             else if (_data >= currentNode.GetData())
@@ -72,70 +80,146 @@ namespace DataStructures
                     Node newNode = new Node(_data);
                     newNode.SetParent(currentNode);
                     currentNode.SetRight(newNode);
-                    treeSize++;
+                    nodeAmount++;
                 }
             }
         }
 
-        public void TraverseTree(TraversalType traversal, Method method, int? num = null) 
+        //moves through the tree depending on traversal type
+        //if there are no nodes, return from function
+        //call traversal function and pass in:
+        // - traversal type
+        // - tree method type
+        // - number to search (otherwise null)
+
+        //int? is nullable type so that parameter can be optional
+
+        //try/catch(exception) is used to interrupt the recursive algorithm, otherwise
+        //recursion will still happen after the number has been found which is a waste of resources
+        public (long, bool) TraverseTree(TraversalType traversal, Method method, int? num = null) 
         {
+            long nodesTraversed = 0;
+            bool numFound = false;
+
             if (root == null) 
             {
                 Console.WriteLine($"No Nodes To Display - NULL TREE");
-                return;
+                return (nodesTraversed, false);
             }
 
-            try
+            (nodesTraversed, numFound)  = Traverse(root, traversal, method, num);
+            if (numFound)
             {
-                Traverse(root, traversal, method, num);
+                return (nodesTraversed, true);
             }
-            catch (Exception exception)
-            {
-                Console.WriteLine(exception.Message);
-            }
+            return (nodesTraversed, false);
         }
 
-        public void Traverse(Node currentNode, TraversalType traversal, Method method, int? num = null) 
+        //moves through the tree depending on traversal type
+        //if current node is null - reached end of this leg of the tree
+        //switch statement determines traversal method to use:
+        // - pre-order
+        // - in-order
+        // - post-order
+        //traversal type in this case simply determines when the current node's number is printed to console
+        //the code is not DRY because I wanted to simulate the three traversal methods, in reality, the current node can be checked
+        //at the beginning of the function and left/right processed one after the other
+        public (long, bool) Traverse(Node currentNode, TraversalType traversal, Method method, int? num = null, long _nodesTraversed = 0) 
         {
-            if(currentNode == null) 
+            long nodesTraversed = _nodesTraversed;
+            bool numFound = false;
+
+            if (currentNode == null) 
             {
-                return;
+                return (nodesTraversed, false);
             }
 
-            if (method == Method.Search && num.HasValue && num.Value == currentNode.GetData())
-            {
-                throw new Exception($"Number found in tree: {num.Value}");
-            }
+            nodesTraversed++;
 
             switch (traversal)
             {
                 case TraversalType.PreOrder:
-                    //Console.WriteLine(currentNode.GetData());
-                    Traverse(currentNode.GetLeft(), traversal, method, num);
-                    Traverse(currentNode.GetRight(), traversal, method, num);
+                    (nodesTraversed, numFound) = CurrentNode(currentNode, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetLeft(), traversal, method, num, nodesTraversed);
+                    if (numFound) 
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetRight(), traversal, method, num, nodesTraversed);
+                    if (numFound) 
+                    {
+                        return (nodesTraversed, true);
+                    }
                     break;
 
                 case TraversalType.InOrder:
-                    Traverse(currentNode.GetLeft(), traversal, method, num);
-                    //Console.WriteLine(currentNode.GetData());
-                    Traverse(currentNode.GetRight(), traversal, method, num);
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetLeft(), traversal, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = CurrentNode(currentNode, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetRight(), traversal, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
                     break;
 
                 case TraversalType.PostOrder:
-                    Traverse(currentNode.GetLeft(), traversal, method, num);
-                    Traverse(currentNode.GetRight(), traversal, method, num);
-                    //Console.WriteLine(currentNode.GetData());
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetLeft(), traversal, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = Traverse(currentNode.GetRight(), traversal, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
+                    (nodesTraversed, numFound) = CurrentNode(currentNode, method, num, nodesTraversed);
+                    if (numFound)
+                    {
+                        return (nodesTraversed, true);
+                    }
                     break;
             }
+            return (nodesTraversed, false);
         }
-        #endregion
 
-        #region Utility Functions
-        public void VerifyTree(Node currentNode)
+        private (long, bool) CurrentNode(Node currentNode, Method method, int? num, long nodesTraversed)
+        {
+            if (method == Method.Search && num.HasValue && num.Value == currentNode.GetData())
+            {
+                //Console.WriteLine(currentNode.GetData());
+                //Console.WriteLine($"\nNumber found in tree: {num.Value}");
+                return (nodesTraversed, true);
+            }
+            else if (method == Method.Display)
+            {
+                Console.WriteLine(currentNode.GetData());
+            }
+
+            return (nodesTraversed, false);
+        }
+
+        //moves through the tree and verifies that each Node's children conform to the
+        //data structure rules (left is less than parent, right is greater than parent)
+        //if a comparison fails one of the above conditions, an error is thrown
+        //VerifyTree is called recursively until next child node is null, for each leg
+        public bool VerifyTree(Node currentNode)
         {
             if (currentNode == null) 
             {
-                return;
+                return true;
             }
 
             if (currentNode.GetLeft() != null)
@@ -143,8 +227,12 @@ namespace DataStructures
                 if (currentNode.GetLeft().GetData() >= currentNode.GetData())
                 {
                     Console.WriteLine($"Error: Left child {currentNode.GetLeft().GetData()} is not less than parent {currentNode.GetData()}");
+                    return false;
                 }
-                VerifyTree(currentNode.GetLeft());
+                if (!VerifyTree(currentNode.GetLeft()))
+                {
+                    return false;
+                }
             }
 
             if (currentNode.GetRight() != null)
@@ -152,22 +240,28 @@ namespace DataStructures
                 if (currentNode.GetRight().GetData() < currentNode.GetData())
                 {
                     Console.WriteLine($"Error: Right child {currentNode.GetRight().GetData()} is not greater than parent {currentNode.GetData()}");
+                    return false;
                 }
-                VerifyTree(currentNode.GetRight());
+                if (!VerifyTree(currentNode.GetRight())) 
+                {
+                    return false;
+                }
             }
 
-            if (currentNode == GetRoot()) 
-            {
-                Console.WriteLine("Tree verified");
-            }
+            return true;
         }
-        #endregion
 
-        #region Get/Set Functions
+        //Get/Set functions
+
+        //returns the root Node
         public Node GetRoot() 
         {
             return root;
         }
-        #endregion
+
+        public int GetNodeAmount() 
+        {
+            return nodeAmount;
+        }
     }
 }

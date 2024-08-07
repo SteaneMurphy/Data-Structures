@@ -4,14 +4,11 @@
     //references to its preceding and following Nodes
     public class Node
     {
-        #region Class Variables
         private int data { get; set; }
         private Node parent { get; set; }
         private Node nextLeft { get; set; }
         private Node nextRight { get; set; }
-        #endregion
 
-        #region Class Constructors
         //default Node constructor, no data passed
         public Node()
         {
@@ -25,9 +22,7 @@
             nextRight = null;
             data = _data;
         }
-        #endregion
 
-        #region Get/Set Functions
         //as class variables are private, must be retrieved or set via the get/set functions below
         public int GetData()
         {
@@ -68,6 +63,5 @@
         {
             nextRight = _nextRight;
         }
-        #endregion
     }
 }
